@@ -1,0 +1,87 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  SAM Template for linksaver Authentication
+
+Resources:
+  CognitoUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: linksaver
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
+      MfaConfiguration: "OFF"
+      AutoVerifiedAttributes:
+        - email
+      UsernameAttributes:
+        - email
+      EmailConfiguration:
+        EmailSendingAccount: COGNITO_DEFAULT
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+      VerificationMessageTemplate:
+        DefaultEmailOption: CONFIRM_WITH_LINK
+        EmailSubjectByLink: Your verification link for Link Saver
+        EmailMessageByLink: Please click the following link to verify your email address. {##Verify Email##}
+      LambdaConfig:
+        PostConfirmation: !GetAtt PostConfirmationHandler.Arn
+
+  CognitoUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: linksaver-client
+      UserPoolId: !Ref CognitoUserPool
+      AccessTokenValidity: 6
+      IdTokenValidity: 6
+      RefreshTokenValidity: 30
+      ExplicitAuthFlows:
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_USER_PASSWORD_AUTH
+      PreventUserExistenceErrors: ENABLED
+      EnableTokenRevocation: true
+      ReadAttributes:
+        - email
+        - email_verified
+      WriteAttributes:
+        - email
+
+  CreateUserRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/AmazonCognitoPowerUser
+      RoleName: CreateUserRole
+
+  PostConfirmationHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: linksaver/
+      Handler: auth.create_user
+      Runtime: python3.12
+      Role: !GetAtt CreateUserRole.Arn
+
+  UserPoolPostConfirmationInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:invokeFunction
+      Principal: cognito-idp.amazonaws.com
+      FunctionName: !Ref PostConfirmationHandler
+      SourceArn: !GetAtt CognitoUserPool.Arn

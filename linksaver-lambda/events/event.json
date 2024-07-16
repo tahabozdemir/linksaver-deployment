@@ -1,0 +1,22 @@
+{
+  "version": "1",
+  "region": "us-east-1",
+  "userPoolId": "us-east-1_example",
+  "userName": "exampleUser",
+  "callerContext": {
+    "awsSdkVersion": "aws-sdk-unknown-unknown",
+    "clientId": "exampleClientId"
+  },
+  "triggerSource": "PostConfirmation_ConfirmSignUp",
+  "request": {
+    "userAttributes": {
+      "sub": "example-sub-1234",
+      "cognito:email_alias": "user@example.com",
+      "cognito:user_status": "CONFIRMED",
+      "email_verified": "true",
+      "username": "example-sub-1234",
+      "email": "user@example.com"
+    }
+  },
+  "response": {}
+}
