@@ -1,0 +1,45 @@
+- name: Setup Docker and Docker Compose on EC2
+  hosts: ec2_instance
+  become: true
+  environment: "{{ env_vars }}"
+  tasks:
+    - name: Update all packages
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest
+      register: update_result
+
+    - name: Copy docker-compose.yaml to remote
+      ansible.builtin.copy:
+        src: ../docker-compose.yaml
+        dest: /home/ec2-user/docker-compose.yaml
+        owner: ec2-user
+        group: ec2-user
+        mode: "0644"
+
+    - name: Get host info
+      community.docker.docker_host_info:
+        containers: true
+        images: true
+      register: docker_info
+
+    - name: Remove all containers
+      community.docker.docker_container:
+        name: "{{ item }}"
+        state: absent
+        keep_volumes: true
+      loop: "{{ docker_info.containers | map(attribute='Id') }}"
+
+    - name: Remove all images
+      community.docker.docker_image:
+        name: "{{ item }}"
+        state: absent
+        force_absent: true
+      loop: "{{ docker_info.images | map(attribute='Id') }}"
+
+    - name: Run Docker Compose
+      ansible.builtin.command:
+        cmd: docker-compose up -d
+      args:
+        chdir: /home/ec2-user
+      changed_when: false
