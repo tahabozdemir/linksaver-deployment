@@ -2,7 +2,9 @@ AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 Description: >
   SAM Template for linksaver Authentication
-
+Parameters:
+  EC2InstanceId:
+    Type: String
 Resources:
   CognitoUserPool:
     Type: AWS::Cognito::UserPool
@@ -69,6 +71,15 @@ Resources:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
         - arn:aws:iam::aws:policy/AmazonCognitoPowerUser
       RoleName: CreateUserRole
+      Policies:
+        - PolicyName: EC2DescribeInstancesPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeInstances
+                Resource: "*"
 
   PostConfirmationHandler:
     Type: AWS::Serverless::Function
@@ -77,6 +88,9 @@ Resources:
       Handler: auth.create_user
       Runtime: python3.12
       Role: !GetAtt CreateUserRole.Arn
+      Environment:
+        Variables:
+          EC2_INSTANCE_ID: !Ref EC2InstanceId
 
   UserPoolPostConfirmationInvokePermission:
     Type: AWS::Lambda::Permission

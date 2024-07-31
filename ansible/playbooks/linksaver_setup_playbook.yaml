@@ -43,6 +43,14 @@
         group: ec2-user
         mode: "0644"
 
+    - name: Copy .env files to remote
+      ansible.builtin.copy:
+        src: ../prod/env_vars_prod.yaml
+        dest: /home/ec2-user/.env
+        owner: ec2-user
+        group: ec2-user
+        mode: "0644"
+
     - name: Run Docker Compose
       ansible.builtin.command:
         cmd: docker-compose up -d
