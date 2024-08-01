@@ -21,6 +21,7 @@ region = "eu-west-1"
 disable_rollback = true
 image_repositories = []
 capabilities = "CAPABILITY_IAM"
+parameter_overrides = "EC2InstanceId=\"<ADD_YOUR_ID_HERE>\""
 
 [default.package.parameters]
 resolve_s3 = true
@@ -33,3 +34,4 @@ warm_containers = "EAGER"
 
 [default.local_start_lambda.parameters]
 warm_containers = "EAGER"
+
