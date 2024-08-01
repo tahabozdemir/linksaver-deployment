@@ -43,10 +43,10 @@
         group: ec2-user
         mode: "0644"
 
-    - name: Copy .env files to remote
+    - name: Copy ELK stack config files to remote
       ansible.builtin.copy:
-        src: ../prod/env_vars_prod.yaml
-        dest: /home/ec2-user/.env
+        src: ../config
+        dest: /home/ec2-user
         owner: ec2-user
         group: ec2-user
         mode: "0644"
