@@ -1,7 +1,6 @@
 - name: Setup Docker and Docker Compose on EC2
   hosts: ec2_instance
   become: true
-  environment: "{{ env_vars }}"
   tasks:
     - name: Update all packages
       ansible.builtin.dnf:
@@ -9,8 +8,23 @@
         state: latest
       register: update_result
 
+    - name: Install pip
+      ansible.builtin.dnf:
+        name: python3-pip
+        state: present
+
     - name: Install Docker
       ansible.builtin.dnf:
+        name: docker
+        state: present
+
+    - name: Ensure system requests package is removed
+      ansible.builtin.dnf:
+        name: python3-requests
+        state: absent
+
+    - name: Install Docker SDK
+      ansible.builtin.pip:
         name: docker
         state: present
 
@@ -51,9 +65,21 @@
         group: ec2-user
         mode: "0644"
 
-    - name: Run Docker Compose
-      ansible.builtin.command:
-        cmd: docker-compose up -d
-      args:
-        chdir: /home/ec2-user
-      changed_when: false
+    - name: Copy Environment Variables File
+      ansible.builtin.copy:
+        src: ../.env
+        dest: /home/ec2-user
+        owner: ec2-user
+        group: ec2-user
+        mode: "0644"
+
+    - name: Load secret definitions
+      ansible.builtin.set_fact:
+        secret_file: "{{ lookup('file', '../secrets/secrets.yaml') | from_yaml }}"
+
+    - name: Create Docker secrets from values
+      community.docker.docker_secret:
+        name: "{{ item.name }}"
+        data: "{{ item.value }}"
+        state: present
+      loop: "{{ secret_file.secrets }}"

@@ -480,3 +480,4 @@ terraform.rc
 
 /terraform/ssh-key
 /ansible/prod
+/ansible/secrets
